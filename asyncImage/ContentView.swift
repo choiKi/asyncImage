@@ -6,83 +6,90 @@
 //
 
 import SwiftUI
-import CoreData
 
-struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+extension Image {
 
-    var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-            Text("Select an item")
-        }
+    func imageModifier() -> some View {
+        self
+            .resizable()
+            .scaledToFit()
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
+    
+    func iconModifier() -> some View {
+        self
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: 120)
+            .foregroundColor(.purple)
+            .opacity(0.5)
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
+struct ContentView: View {
+    
+    private var imageUrl : String = "https://img.freepik.com/free-vector/character-bee-set_77984-116.jpg"
+    
+    
+    var body: some View{
+        // 1 url 넣기
+        // 2 크기 정하기
+        
+        //AsyncImage(url: URL(string: imageUrl), scale: 3.0)
+       
+        // 3 플레이스 홀더
+        
+        /*
+        AsyncImage(url: URL(string: imageUrl)) { image in
+            image
+                .resizable()
+                .scaledToFit()
+        } placeholder: {
+            Image(systemName: "photo.circle.fill")
+                .iconModifier()
+        }
+         */
+        
+        // 4 Phase
+        /*
+        AsyncImage(url: URL(string: imageUrl)) { phase in
+            if let image = phase.image {
+            image
+                .resizable()
+                .scaledToFit()
+            }else if phase.error != nil {
+                Image(systemName: "ant.circle.fill").iconModifier()
+            }else {
+                Image(systemName: "ant.circle.fill").iconModifier()
+            }
+        }
+        .padding(40)
+         */
+        // 5 animation
+        
+        AsyncImage(url: URL(string: imageUrl), transaction:  Transaction(animation: .spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.25))) { phase in
+            switch phase {
+            case .success(let image):
+                image.imageModifier()
+                    .transition(.move(edge: .bottom))
+            case .failure(_):
+                Image(systemName: "ant.circle.cill").iconModifier()
+            case .empty:
+                Image(systemName: "photo.circle.fill").iconModifier()
+            @unknown default:
+                ProgressView()
+            }
+            
+        }
+        .padding(40)
+         
+    }
+}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        Group {
+            ContentView()
+            }
     }
 }
